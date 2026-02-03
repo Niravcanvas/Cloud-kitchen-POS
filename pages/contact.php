@@ -1,5 +1,76 @@
 <?php
 session_start();
+
+// Show errors (DEV only)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Load .env file
+$env = parse_ini_file(__DIR__ . '/../.env');
+if (!$env) {
+    die('ENV file not loaded');
+}
+
+// Load Composer autoloader (IMPORTANT)
+require __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Basic sanitization
+    $name    = htmlspecialchars(trim($_POST['name']));
+    $email   = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+    $subject = htmlspecialchars(trim($_POST['subject']));
+    $message = nl2br(htmlspecialchars(trim($_POST['message'])));
+
+    if (!$email) {
+        $_SESSION['success'] = 'Invalid email address.';
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+
+    $mail = new PHPMailer(true);
+
+    try {
+        // SMTP CONFIG (Gmail example)
+        $mail->isSMTP();
+        $mail->Host       = $env['SMTP_HOST'];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $env['SMTP_USER'];
+        $mail->Password   = $env['SMTP_PASS'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = (int)$env['SMTP_PORT'];
+
+        // Mail headers
+        $mail->setFrom($env['SMTP_USER'], 'CakeCafe POS');
+        $mail->addReplyTo($email, $name);
+        $mail->addAddress($env['SMTP_USER']);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = "[Contact] $subject";
+        $mail->Body = "
+            <strong>Name:</strong> {$name}<br>
+            <strong>Email:</strong> {$email}<br><br>
+            <strong>Message:</strong><br>
+            {$message}
+        ";
+
+        $mail->send();
+
+        $_SESSION['success'] = 'Your message has been sent successfully!';
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+
+    } catch (Exception $e) {
+        $_SESSION['success'] = 'Message could not be sent. Try again later.';
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
