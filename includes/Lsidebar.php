@@ -6,10 +6,23 @@ $base = $in_pages ? '../' : '';
 <aside class="sidebar">
   <div class="logo">
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" y="4" width="24" height="24" rx="4" fill="#630116"/>
-      <path d="M12 16L14.5 18.5L20 13" stroke="#FBF9F5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Cake base -->
+      <rect x="6" y="18" width="20" height="8" rx="1" fill="#630116"/>
+      <!-- Cake middle layer -->
+      <rect x="7" y="14" width="18" height="4" rx="1" fill="#8B0220"/>
+      <!-- Cake top layer -->
+      <rect x="8" y="10" width="16" height="4" rx="1" fill="#A6032F"/>
+      <!-- Frosting drips -->
+      <path d="M8 10 Q8 8 10 8 Q12 8 12 10" fill="#FBF9F5"/>
+      <path d="M14 10 Q14 8 16 8 Q18 8 18 10" fill="#FBF9F5"/>
+      <path d="M20 10 Q20 8 22 8 Q24 8 24 10" fill="#FBF9F5"/>
+      <!-- Candle -->
+      <rect x="15" y="4" width="2" height="4" rx="0.5" fill="#FFD700"/>
+      <!-- Flame -->
+      <ellipse cx="16" cy="3" rx="1.5" ry="2" fill="#FFA500"/>
+      <ellipse cx="16" cy="3" rx="0.8" ry="1.2" fill="#FFD700"/>
     </svg>
-    <span>Point of Sale</span>
+    <span>Cake Cafe</span>
   </div>
   
   <nav>
@@ -56,7 +69,7 @@ $base = $in_pages ? '../' : '';
   </nav>
 
   <div class="sidebar-footer">
-    <p>&copy; <?= date('Y'); ?> POS</p>
+    <p>&copy; <?= date('Y'); ?> Cake Cafe</p>
   </div>
 </aside>
 
