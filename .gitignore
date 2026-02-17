@@ -1,7 +1,6 @@
 # ─── Environment & Config ───
 .env
 .env.local
-config/dbcon.php
 
 # ─── Generated Invoices ───
 invoices/*.pdf
