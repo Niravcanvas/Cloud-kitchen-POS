@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Mail headers
         $mail->setFrom($env['SMTP_USER'], 'CakeCafe POS');
         $mail->addReplyTo($email, $name);
-        $mail->addAddress($env['SMTP_USER']);
+        // Send contact form messages to the requested recipient
+        $mail->addAddress('rushabpn23hcs@student.mes.ac.in');
 
         // Content
         $mail->isHTML(true);
