@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Include DB connection (updated path for root location)
+// Include DB connection
 include __DIR__ . '/config/dbcon.php';
 
 // Get username
@@ -366,6 +366,7 @@ $stmt->close();
       border: 1px solid var(--accent-primary);
     }
 
+    /* ===== INVOICE BUTTON — same style as history.php ===== */
     .invoice-btn {
       display: inline-flex;
       align-items: center;
@@ -387,14 +388,10 @@ $stmt->close();
       color: white;
       border-color: var(--accent-secondary);
       transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(175, 91, 115, 0.2);
     }
 
-    .invoice-btn.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
+    /* ===== EMPTY STATE ===== */
     .empty-state {
       text-align: center;
       padding: 64px 24px;
@@ -425,14 +422,8 @@ $stmt->close();
 
     /* ===== ANIMATIONS ===== */
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     /* ===== RESPONSIVE ===== */
@@ -442,9 +433,7 @@ $stmt->close();
         padding: 32px 24px;
       }
 
-      .page-header h1 {
-        font-size: 30px;
-      }
+      .page-header h1 { font-size: 30px; }
 
       .summary-cards {
         grid-template-columns: 1fr;
@@ -456,13 +445,8 @@ $stmt->close();
         align-items: stretch;
       }
 
-      .form-group {
-        min-width: 100%;
-      }
-
-      .filter-btn {
-        width: 100%;
-      }
+      .form-group { min-width: 100%; }
+      .filter-btn { width: 100%; }
     }
 
     @media (max-width: 480px) {
@@ -471,13 +455,8 @@ $stmt->close();
         padding: 24px 16px;
       }
 
-      .page-header h1 {
-        font-size: 28px;
-      }
-
-      .summary-card {
-        padding: 24px;
-      }
+      .page-header h1 { font-size: 28px; }
+      .summary-card   { padding: 24px; }
 
       .order-table th,
       .order-table td {
@@ -501,10 +480,11 @@ $stmt->close();
 
     <!-- Summary Cards -->
     <div class="summary-cards">
+
       <div class="summary-card">
         <h3>Current Date & Time</h3>
         <div class="clock" id="live-clock"></div>
-        <div class="date" id="live-date"></div>
+        <div class="date"  id="live-date"></div>
       </div>
 
       <div class="summary-card">
@@ -521,18 +501,20 @@ $stmt->close();
         <div class="value">+8%</div>
         <p class="description">Sales up compared to yesterday. Focus on top performing items for continued growth.</p>
       </div>
+
     </div>
 
     <!-- Filter Section -->
     <div class="filter-section">
-      <form class="filter-form">
+      <form class="filter-form" method="GET">
         <div class="form-group">
           <label for="date">Date</label>
-          <input type="date" id="date" name="date" />
+          <input type="date" id="date" name="date" value="<?= htmlspecialchars($_GET['date'] ?? '') ?>"/>
         </div>
         <div class="form-group">
           <label for="search">Search</label>
-          <input type="text" id="search" name="search" placeholder="Order ID, customer name..." />
+          <input type="text" id="search" name="search" placeholder="Order ID, customer name..."
+                 value="<?= htmlspecialchars($_GET['search'] ?? '') ?>"/>
         </div>
         <button type="submit" class="filter-btn">
           <i class="fas fa-filter"></i> Apply Filter
@@ -558,67 +540,81 @@ $stmt->close();
           </thead>
           <tbody>
             <?php
-            // Fetch orders with customer name and invoice file path
-            $sql = "SELECT o.id AS order_id, c.name AS customer_name, o.order_time, o.status, i.file_path
+            // Build optional WHERE clause from filter inputs
+            $whereParts = [];
+            $filterDate   = $_GET['date']   ?? '';
+            $filterSearch = $_GET['search'] ?? '';
+
+            if ($filterDate) {
+                $safeDate = $conn->real_escape_string($filterDate);
+                $whereParts[] = "DATE(o.order_time) = '{$safeDate}'";
+            }
+            if ($filterSearch) {
+                $s = $conn->real_escape_string($filterSearch);
+                $whereParts[] = "(o.id LIKE '%{$s}%' OR c.name LIKE '%{$s}%')";
+            }
+
+            $whereSQL = $whereParts ? 'WHERE ' . implode(' AND ', $whereParts) : '';
+
+            // ── FIX: no invoices table join — use handler URL directly ──────
+            $sql = "SELECT o.id AS order_id,
+                           c.name AS customer_name,
+                           o.order_time,
+                           o.status
                     FROM orders o
                     LEFT JOIN customers c ON o.customer_id = c.id
-                    LEFT JOIN invoices i ON o.id = i.order_id
+                    {$whereSQL}
                     ORDER BY o.order_time DESC
                     LIMIT 50";
-            
+
             $result = $conn->query($sql);
 
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $orderId = $row['order_id'];
+            if ($result && $result->num_rows > 0):
+                while ($row = $result->fetch_assoc()):
+                    $orderId      = (int) $row['order_id'];
                     $customerName = htmlspecialchars($row['customer_name'] ?? 'Guest');
-                    $orderDate = date("d M Y", strtotime($row['order_time']));
-                    $status = strtolower($row['status']);
-                    $invoiceLink = $row['file_path'] ? htmlspecialchars($row['file_path']) : null;
-                    
-                    // Determine status class
-                    $statusClass = 'status-pending';
-                    if ($status === 'completed') {
-                        $statusClass = 'status-completed';
-                    } elseif ($status === 'preparing') {
-                        $statusClass = 'status-preparing';
-                    }
+                    $orderDate    = date('d M Y', strtotime($row['order_time']));
+                    $status       = strtolower($row['status'] ?? 'pending');
 
-                    echo "<tr>
-                            <td class='order-id'>#" . str_pad($orderId, 4, '0', STR_PAD_LEFT) . "</td>
-                            <td>{$customerName}</td>
-                            <td>{$orderDate}</td>
-                            <td><span class='status-badge {$statusClass}'>{$status}</span></td>
-                            <td>";
-                    
-                    if ($invoiceLink) {
-                        echo "<a href='{$invoiceLink}' class='invoice-btn' target='_blank'>
-                                <i class='fas fa-file-invoice'></i> View
-                              </a>";
-                    } else {
-                        echo "<span class='invoice-btn disabled'>
-                                <i class='fas fa-file-invoice'></i> N/A
-                              </span>";
-                    }
-                    
-                    echo "</td>
-                          </tr>";
-                }
-            } else {
-                echo "<tr><td colspan='5'>
-                        <div class='empty-state'>
-                          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
-                            <circle cx='12' cy='12' r='10'/>
-                            <path d='M16 16s-1.5-2-4-2-4 2-4 2'/>
-                            <line x1='9' y1='9' x2='9.01' y2='9'/>
-                            <line x1='15' y1='9' x2='15.01' y2='9'/>
-                          </svg>
-                          <h3>No Orders Found</h3>
-                          <p>There are currently no orders to display</p>
-                        </div>
-                      </td></tr>";
-            }
+                    $statusClass = match($status) {
+                        'completed' => 'status-completed',
+                        'preparing' => 'status-preparing',
+                        default     => 'status-pending',
+                    };
             ?>
+                  <tr>
+                    <td class="order-id">#<?= str_pad($orderId, 4, '0', STR_PAD_LEFT) ?></td>
+                    <td><?= $customerName ?></td>
+                    <td><?= $orderDate ?></td>
+                    <td><span class="status-badge <?= $statusClass ?>"><?= htmlspecialchars($status) ?></span></td>
+                    <td>
+                      <!-- Same pattern as history.php — generates PDF on the fly -->
+                      <a href="handlers/invoice.php?order_id=<?= $orderId ?>"
+                         class="invoice-btn" target="_blank">
+                        <i class="fas fa-file-invoice"></i> View
+                      </a>
+                    </td>
+                  </tr>
+            <?php
+                endwhile;
+            else:
+            ?>
+                  <tr>
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M16 16s-1.5-2-4-2-4 2-4 2"/>
+                          <line x1="9" y1="9" x2="9.01" y2="9"/>
+                          <line x1="15" y1="9" x2="15.01" y2="9"/>
+                        </svg>
+                        <h3>No Orders Found</h3>
+                        <p>There are currently no orders to display</p>
+                      </div>
+                    </td>
+                  </tr>
+            <?php endif; ?>
           </tbody>
         </table>
       </div>
@@ -627,28 +623,19 @@ $stmt->close();
   </div>
 
   <script>
-    // Live Clock Update
     function updateClock() {
-      const now = new Date();
-      
-      // Time
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      
-      // Date
-      const day = String(now.getDate()).padStart(2, '0');
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const month = monthNames[now.getMonth()];
-      const year = now.getFullYear();
-      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const dayName = dayNames[now.getDay()];
+      const now  = new Date();
+      const pad  = n => String(n).padStart(2, '0');
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      const mons = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-      document.getElementById('live-clock').textContent = `${hours}:${minutes}:${seconds}`;
-      document.getElementById('live-date').textContent = `${dayName}, ${day} ${month} ${year}`;
+      document.getElementById('live-clock').textContent =
+        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+      document.getElementById('live-date').textContent =
+        `${days[now.getDay()]}, ${pad(now.getDate())} ${mons[now.getMonth()]} ${now.getFullYear()}`;
     }
 
-    // Initialize and update every second
     updateClock();
     setInterval(updateClock, 1000);
   </script>
