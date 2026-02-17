@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <tr>
                 <td valign="top" width="33%" style="border-right:1px solid #CEC3C1;padding:14px 16px;">
                   <div style="font-family:Helvetica,Arial,sans-serif;font-size:8px;font-weight:bold;color:#AF5B73;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:5px;">EMAIL</div>
-                  <div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#2a2a2a;">support@possystem.com</div>
+                  <div style="font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#2a2a2a;">rushabpn23hcs@student.mes.ac.in</div>
                 </td>
                 <td valign="top" width="33%" style="border-right:1px solid #CEC3C1;padding:14px 16px;">
                   <div style="font-family:Helvetica,Arial,sans-serif;font-size:8px;font-weight:bold;color:#AF5B73;letter-spacing:0.16em;text-transform:uppercase;margin-bottom:5px;">PHONE</div>
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $mail->setFrom($env['SMTP_USER'], 'CakeCafe POS');
         $mail->addReplyTo($email, $name);
-        $mail->addAddress($env['SMTP_USER']);
+        $mail->addAddress('rushabpn23hcs@student.mes.ac.in');
 
         $mail->isHTML(true);
         $mail->Subject = "[Contact] $subject";
@@ -516,7 +516,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="contact-details">
               <div class="contact-label">Email</div>
-              <div class="contact-value"><a href="mailto:support@possystem.com">support@possystem.com</a></div>
+              <div class="contact-value"><a href="mailto:rushabpn23hcs@student.mes.ac.in">rushabpn23hcs@student.mes.ac.in</a></div>
             </div>
           </div>
 
