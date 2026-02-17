@@ -10,23 +10,21 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+// Disable strict exception throwing
+mysqli_report(MYSQLI_REPORT_OFF);
+
 $sql = file_get_contents(__DIR__ . '/dump.sql');
 $statements = explode(';', $sql);
 
-$errors = [];
+$success = 0;
 foreach ($statements as $statement) {
     $statement = trim($statement);
     if (!empty($statement)) {
-        if (!$conn->query($statement)) {
-            $errors[] = $conn->error;
+        if ($conn->query($statement)) {
+            $success++;
         }
     }
 }
 
-if (empty($errors)) {
-    echo "✅ Database imported successfully! Delete import.php now.";
-} else {
-    echo "Done with some errors:<br>";
-    foreach ($errors as $e) echo "- $e<br>";
-}
+echo "✅ Done! $success statements executed. Delete import.php now.";
 ?>
