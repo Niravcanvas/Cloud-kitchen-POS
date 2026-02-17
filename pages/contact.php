@@ -7,10 +7,12 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Load .env file
-$env = parse_ini_file(__DIR__ . '/../.env');
-if (!$env) {
-    die('ENV file not loaded');
-}
+$env = [
+    'SMTP_HOST' => getenv('SMTP_HOST'),
+    'SMTP_USER' => getenv('SMTP_USER'),
+    'SMTP_PASS' => getenv('SMTP_PASS'),
+    'SMTP_PORT' => getenv('SMTP_PORT') ?: '587',
+];
 
 // Load Composer autoloader (IMPORTANT)
 require __DIR__ . '/../vendor/autoload.php';
